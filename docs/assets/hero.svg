@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Zipkesh — right-click, set a password, zip.</title>
+  <desc id="desc">Project artwork with an illustrated native macOS archive window. This is an interface mockup, not a screenshot.</desc>
+  <defs>
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M60 0H0V60" fill="none" stroke="#dce3d8" stroke-width="1"/></pattern>
+    <filter id="shadow" x="-30%" y="-20%" width="160%" height="160%"><feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#17251b" flood-opacity=".16"/></filter>
+    <linearGradient id="paper" x2="0" y2="1"><stop stop-color="#fdfefb"/><stop offset="1" stop-color="#f4f6f0"/></linearGradient>
+  </defs>
+  <rect width="1600" height="900" rx="32" fill="#eef2e9"/>
+  <rect width="1600" height="900" rx="32" fill="url(#grid)"/>
+  <circle cx="1440" cy="140" r="340" fill="#d9e8be" opacity=".38"/>
+  <circle cx="105" cy="850" r="260" fill="#dfe9cf" opacity=".5"/>
+  <g font-family="DejaVu Sans, Arial, sans-serif">
+    <rect x="92" y="90" width="266" height="42" rx="21" fill="#1a2923"/>
+    <circle cx="116" cy="111" r="5" fill="#d5ec91"/>
+    <text x="134" y="117" font-size="13" font-weight="700" letter-spacing="1.6" fill="#f3f8ed">FINDER QUICK ACTION</text>
+    <g transform="translate(94 196)">
+      <rect width="91" height="103" rx="22" fill="#c9e780"/>
+      <path d="M32 20h27v63H32z" fill="#203329"/>
+      <path d="M39 20h6v7h-6zm8 8h6v7h-6zm-8 8h6v7h-6zm8 8h6v7h-6zm-8 8h6v7h-6z" fill="#d9efaa"/>
+      <rect x="37" y="61" width="18" height="24" rx="5" fill="#d9efaa"/>
+      <rect x="42" y="66" width="8" height="9" rx="2" fill="#203329"/>
+    </g>
+    <text x="205" y="273" font-size="84" font-weight="700" letter-spacing="-5" fill="#1a2923">Zipkesh.</text>
+    <text x="92" y="377" font-size="48" font-weight="700" letter-spacing="-1.5" fill="#1a2923">Right-click.</text>
+    <text x="92" y="438" font-size="48" font-weight="700" letter-spacing="-1.5" fill="#1a2923">Keep it private.</text>
+    <text x="94" y="500" font-size="23" fill="#536057">Encrypted archives, right in Finder.</text>
+    <text x="94" y="535" font-size="23" fill="#536057">A password. A format. You're done.</text>
+    <rect x="92" y="588" width="620" height="65" rx="15" fill="#fff" stroke="#d6ded1"/>
+    <text x="115" y="627" font-size="18" fill="#203329">Finder  →  Quick Actions  →  Zipkesh</text>
+    <g font-size="12" font-weight="700" letter-spacing="1.2" fill="#344738">
+      <rect x="93" y="693" width="107" height="34" rx="8" fill="#dce7cf"/><text x="111" y="715">AES-256</text>
+      <rect x="212" y="693" width="125" height="34" rx="8" fill="#dce7cf"/><text x="230" y="715">ZIP + 7z</text>
+      <rect x="349" y="693" width="145" height="34" rx="8" fill="#dce7cf"/><text x="368" y="715">LOCAL FIRST</text>
+    </g>
+    <text x="94" y="804" font-size="16" fill="#687668">github.com/whoisGray/zipkesh</text>
+    <text x="94" y="832" font-size="13" fill="#687668">Open source · MIT · macOS 13+</text>
+
+    <g filter="url(#shadow)">
+      <rect x="835" y="83" width="668" height="719" rx="19" fill="url(#paper)" stroke="#c5cec0"/>
+      <path d="M855 83h628a20 20 0 0 1 20 20v30H835v-30a20 20 0 0 1 20-20" fill="#edf0e9"/>
+      <path d="M835 133h668" stroke="#dce1d6"/>
+      <circle cx="860" cy="108" r="7" fill="#f27f72"/>
+      <circle cx="883" cy="108" r="7" fill="#edc666"/>
+      <circle cx="906" cy="108" r="7" fill="#91c285"/>
+      <text x="1169" y="114" text-anchor="middle" font-size="13" font-weight="700" fill="#5c655c">Zipkesh</text>
+      <g transform="translate(873 167)">
+        <rect width="51" height="51" rx="13" fill="#e2eacc"/>
+        <rect x="17" y="23" width="18" height="16" rx="3" fill="#48622e"/>
+        <path d="M20 23v-6a6 6 0 0 1 12 0v6" fill="none" stroke="#48622e" stroke-width="3"/>
+        <text x="69" y="23" font-size="25" font-weight="700" fill="#243227">Zipkesh</text>
+        <text x="69" y="46" font-size="13" fill="#6a7367">A little zip. A lot of privacy.</text>
+      </g>
+      <rect x="873" y="242" width="590" height="39" rx="8" fill="#eaf0e2"/>
+      <path d="M888 256h9l3 4h15v13h-27z" fill="#8aa45f"/>
+      <text x="928" y="267" font-size="13" fill="#56624f">Selected: 3 files &amp; folders</text>
+      <text x="873" y="317" font-size="14" font-weight="700" fill="#28382b">Archive format</text>
+      <rect x="873" y="332" width="590" height="39" rx="7" fill="#fff" stroke="#cdd5c7"/>
+      <text x="888" y="357" font-size="14" fill="#30402f">ZIP · AES-256</text>
+      <path d="m1440 347 5 5 5-5" fill="none" stroke="#75816e" stroke-width="2"/>
+      <text x="873" y="396" font-size="12" fill="#6a7367">Strong encryption. Open with Keka or 7-Zip.</text>
+      <text x="873" y="418" font-size="12" fill="#6a7367">Finder Archive Utility cannot extract AES ZIP.</text>
+      <text x="873" y="459" font-size="14" font-weight="700" fill="#28382b">Password</text>
+      <rect x="873" y="474" width="590" height="42" rx="7" fill="#fff" stroke="#a6b88f" stroke-width="1.5"/>
+      <text x="889" y="503" font-size="24" letter-spacing="2" fill="#526044">••••••••••••••••••••••••</text>
+      <rect x="875" y="535" width="13" height="13" rx="3" fill="#fff" stroke="#b0bba7"/>
+      <text x="899" y="546" font-size="12" fill="#53614b">Show password</text>
+      <rect x="1387" y="529" width="76" height="28" rx="6" fill="#fff" stroke="#cdd5c7"/>
+      <text x="1425" y="548" text-anchor="middle" font-size="12" fill="#44563b">Copy</text>
+      <rect x="873" y="578" width="427" height="35" rx="6" fill="#fff" stroke="#cdd5c7"/>
+      <text x="888" y="601" font-size="13" fill="#405137">Strong · 24 characters</text>
+      <path d="m1276 591 5 5 5-5" fill="none" stroke="#75816e" stroke-width="2"/>
+      <rect x="1314" y="578" width="149" height="35" rx="6" fill="#e9eedf" stroke="#cdd5c7"/>
+      <text x="1388" y="601" text-anchor="middle" font-size="13" fill="#405137">Generate</text>
+      <text x="873" y="644" font-size="12" fill="#73816a">Save your password somewhere safe. It cannot be recovered.</text>
+      <circle cx="880" cy="681" r="4" fill="#91ad68"/>
+      <text x="894" y="685" font-size="12" fill="#748269">Password generated locally.</text>
+      <path d="M873 707h590" stroke="#e2e7dc"/>
+      <rect x="1156" y="730" width="91" height="36" rx="7" fill="#fff" stroke="#cdd5c7"/>
+      <text x="1201" y="753" font-size="13" text-anchor="middle" fill="#526047">Cancel</text>
+      <rect x="1263" y="730" width="200" height="36" rx="7" fill="#30482d"/>
+      <text x="1363" y="753" font-size="13" font-weight="700" text-anchor="middle" fill="#f5f9ee">Create archive…</text>
+    </g>
+    <text x="1169" y="836" font-size="12" text-anchor="middle" fill="#7d8a75">INTERFACE ILLUSTRATION · SYSTEM APPEARANCE MAY VARY</text>
+  </g>
+</svg>

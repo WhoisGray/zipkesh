@@ -1,0 +1,34 @@
+Zipkesh 1.0.0 — source-bundle verification
+Date: 2026-11-17
+Environment: Linux x86_64; Python 3.12.14; official 7-Zip 25.01 x64
+
+Command:
+ZIPKESH_7ZZ=/absolute/path/to/7zz python3 -m unittest discover -s tests -v
+
+Result: 24 tests passed; 0 failures; 0 errors; 0 skips.
+Final recorded suite duration: 0.726 seconds.
+
+Additional checks:
+- bash -n: install.sh, uninstall.sh, scripts/check-macos.sh — passed.
+- ShellCheck 0.10.0: same three scripts — passed, no diagnostics.
+- Python source compilation — passed.
+- Local Markdown link target existence — passed.
+- SVG XML parsing and PNG visual inspection — passed.
+- Linux platform guards for installer/uninstaller/macOS check — passed.
+- Source ZIP CRC and expected-file validation — passed.
+
+Not verified here:
+- Swift compilation or AppKit runtime on macOS.
+- Finder menu registration, permissions, user interaction, or clean-Mac installation.
+- GitHub Actions execution or public repository/release publication.
+
+macOS checks are configured in .github/workflows/ci.yml and
+scripts/check-macos.sh. Complete docs/TESTING.md before declaring a macOS release.
+
+Source digests (SHA-256):
+9a629979a984a12ffc729465feb43f8b923bf9e4bd836e6f5c6e289bb737035f  zipkesh/engine.py
+9434599c55a282c42b61e10246c0daedb95b3bc63f48ef405d75ddf803d3507a  zipkesh/launch.py
+f297dc6407fd8525f6efda17cbea2fbc837284b9e3297e9cabee5d20dc8ec642  Sources/Zipkesh.swift
+f895943d675053f3be61f2f8dbd4695c924f5903d837652b0cd866e431221702  install.sh
+f37bcb33d01e6cf274f8e6deadbcf44ac5564f2601d65d41c9a5116998047afd  scripts/make_workflow.py
+b791d69152adfafcdc038b7c51066834bbfc4ad15e1e54abcfef65f72ebde5fb  tests/test_engine.py
