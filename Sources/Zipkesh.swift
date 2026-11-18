@@ -1,14 +1,41 @@
 import AppKit
 import Foundation
+import UniformTypeIdentifiers
+
+private let supportingText = NSColor(name: nil) { appearance in
+    let dark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+    return NSColor(white: dark ? 0.72 : 0.36, alpha: 1)
+}
+
+// Opaque form surfaces keep controls readable over the window's glass material.
+final class ArchiveSurface: NSView {
+    override func draw(_ dirtyRect: NSRect) {
+        let shape = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 16, yRadius: 16)
+        let dark = effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        NSColor(white: dark ? 0.19 : 0.99, alpha: 1).setFill()
+        shape.fill()
+        let contrast = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
+        (contrast ? NSColor.labelColor : NSColor.separatorColor).setStroke()
+        shape.lineWidth = contrast ? 1.5 : 0.5
+        shape.stroke()
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        needsDisplay = true
+    }
+}
 
 // An accessory executable, launched by a Finder service. No app bundle or Dock icon.
-final class Zipkesh: NSObject, NSWindowDelegate {
+final class Zipkesh: NSObject, NSWindowDelegate, NSTextFieldDelegate {
     private let python: String
     private let backend: String
     private let sevenzip: String
     private let paths: [String]
-    private let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 550, height: 640),
+    private let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 580, height: 714),
                                   styleMask: [.titled, .closable], backing: .buffered, defer: false)
+    private let backdrop = NSVisualEffectView()
+    private let passwordFeedback = NSTextField(wrappingLabelWithString: "")
     private let format = NSPopUpButton()
     private let style = NSPopUpButton()
     private let password = NSSecureTextField()
@@ -43,119 +70,263 @@ final class Zipkesh: NSObject, NSWindowDelegate {
     private func row(_ views: [NSView]) -> NSStackView {
         let stack = NSStackView(views: views)
         stack.orientation = .horizontal
+        stack.distribution = .fill
         stack.spacing = 10
         stack.alignment = .centerY
         return stack
     }
 
-    private func buildWindow() {
-        window.title = "Zipkesh"
-        window.delegate = self
-        window.isReleasedWhenClosed = false
-        window.appearance = nil // Follow the system's light/dark appearance.
-        let content = window.contentView!
-        let stack = NSStackView()
+    private func column(_ views: [NSView], spacing: CGFloat = 12) -> NSStackView {
+        let stack = NSStackView(views: views)
         stack.orientation = .vertical
         stack.alignment = .leading
-        stack.spacing = 13
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        content.addSubview(stack)
+        stack.spacing = spacing
+        for view in views {
+            view.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
+        }
+        return stack
+    }
+
+    private func surface(_ body: NSView, inset: CGFloat = 20) -> NSView {
+        let container = ArchiveSurface()
+        body.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(body)
         NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 28),
-            stack.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -28),
-            stack.topAnchor.constraint(equalTo: content.topAnchor, constant: 24),
-            stack.bottomAnchor.constraint(lessThanOrEqualTo: content.bottomAnchor, constant: -20)
+            body.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: inset),
+            body.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -inset),
+            body.topAnchor.constraint(equalTo: container.topAnchor, constant: inset),
+            body.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -inset)
         ])
+        return container
+    }
 
-        let icon = NSImageView()
-        icon.image = NSImage(systemSymbolName: "lock.doc.fill", accessibilityDescription: "Encrypted archive")
-        icon.contentTintColor = .systemIndigo
-        icon.setContentHuggingPriority(.required, for: .horizontal)
-        icon.widthAnchor.constraint(equalToConstant: 42).isActive = true
-        icon.heightAnchor.constraint(equalToConstant: 42).isActive = true
-        let heading = NSStackView(views: [label("Zipkesh", size: 26, bold: true), label("A little zip. A lot of privacy.")])
-        heading.orientation = .vertical
-        heading.alignment = .leading
-        heading.spacing = 2
-        stack.addArrangedSubview(row([icon, heading]))
+    private func symbol(_ name: String, size: CGFloat) -> NSImageView {
+        let view = NSImageView()
+        view.image = NSImage(systemSymbolName: name, accessibilityDescription: nil)
+        view.symbolConfiguration = NSImage.SymbolConfiguration(pointSize: size, weight: .medium)
+        view.contentTintColor = supportingText
+        view.widthAnchor.constraint(equalToConstant: size + 10).isActive = true
+        view.heightAnchor.constraint(equalToConstant: size + 10).isActive = true
+        return view
+    }
 
-        let summary = paths.count == 1 ? URL(fileURLWithPath: paths[0]).lastPathComponent : "\(paths.count) selected files & folders"
-        let selection = label("Selected: \(summary)")
-        selection.textColor = .secondaryLabelColor
+    private func buildWindow() {
+        window.title = "Zipkesh"
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
+        window.delegate = self
+        window.isReleasedWhenClosed = false
+        window.appearance = nil
+        window.isMovableByWindowBackground = true
+        window.backgroundColor = .windowBackgroundColor
+        window.contentView = backdrop
+        backdrop.material = .underWindowBackground
+        backdrop.blendingMode = .behindWindow
+        backdrop.state = .followsWindowActiveState
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self, selector: #selector(accessibilityChanged),
+            name: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil)
+        accessibilityChanged()
+
+        let icon = symbol("lock.doc.fill", size: 30)
+        icon.contentTintColor = .controlAccentColor
+        let subtitle = label("Create an encrypted archive", size: 13)
+        subtitle.textColor = supportingText
+        let heading = column([label("Zipkesh", size: 28, bold: true), subtitle], spacing: 3)
+        let header = row([icon, heading])
+        header.spacing = 16
+
+        let summary = paths.count == 1 ? URL(fileURLWithPath: paths[0]).lastPathComponent : "\(paths.count) files and folders"
+        let selection = label(summary, bold: true)
+        selection.maximumNumberOfLines = 1
+        selection.lineBreakMode = .byTruncatingMiddle
         selection.toolTip = paths.joined(separator: "\n")
-        selection.maximumNumberOfLines = 2
-        stack.addArrangedSubview(selection)
-        stack.addArrangedSubview(label("Archive format", bold: true))
+        selection.setAccessibilityLabel("Selected: \(summary)")
+        let selectionDetail = label("Your original files stay unchanged.", size: 12)
+        selectionDetail.textColor = supportingText
+        let selectionRow = row([symbol("doc.on.doc", size: 22), column([selection, selectionDetail], spacing: 4)])
+        selectionRow.spacing = 14
+        let selectionPanel = surface(selectionRow, inset: 16)
+
         format.addItems(withTitles: ["ZIP · AES-256", "7z · AES-256 + private filenames", "ZIP · Legacy compatibility"])
+        format.controlSize = .large
+        format.setAccessibilityLabel("Archive format")
         format.target = self
         format.action = #selector(formatChanged)
-        stack.addArrangedSubview(format)
         note.font = .systemFont(ofSize: 12)
-        note.textColor = .secondaryLabelColor
+        note.textColor = supportingText
         note.maximumNumberOfLines = 3
-        stack.addArrangedSubview(note)
+        note.heightAnchor.constraint(greaterThanOrEqualToConstant: 32).isActive = true
+        let archivePanel = surface(column([label("Archive format", bold: true), format, note], spacing: 9))
 
-        stack.addArrangedSubview(label("Password", bold: true))
-        password.placeholderString = "At least 8 characters"
+        password.placeholderString = "Enter at least 8 characters"
         visiblePassword.placeholderString = password.placeholderString
-        password.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
-        visiblePassword.font = password.font
-        password.cell?.usesSingleLineMode = true
-        visiblePassword.cell?.usesSingleLineMode = true
         let passwordHolder = NSView()
-        passwordHolder.heightAnchor.constraint(equalToConstant: 26).isActive = true
+        passwordHolder.heightAnchor.constraint(equalToConstant: 36).isActive = true
         for field in [password as NSTextField, visiblePassword] {
+            field.font = .monospacedSystemFont(ofSize: 14, weight: .regular)
+            field.controlSize = .large
+            field.cell?.usesSingleLineMode = true
+            field.cell?.isScrollable = true
+            field.setAccessibilityLabel("Archive password")
+            field.delegate = self
             field.translatesAutoresizingMaskIntoConstraints = false
             passwordHolder.addSubview(field)
             NSLayoutConstraint.activate([
                 field.leadingAnchor.constraint(equalTo: passwordHolder.leadingAnchor),
                 field.trailingAnchor.constraint(equalTo: passwordHolder.trailingAnchor),
-                field.topAnchor.constraint(equalTo: passwordHolder.topAnchor),
-                field.bottomAnchor.constraint(equalTo: passwordHolder.bottomAnchor)
+                field.centerYAnchor.constraint(equalTo: passwordHolder.centerYAnchor),
+                field.heightAnchor.constraint(equalToConstant: 32)
             ])
         }
         visiblePassword.isHidden = true
-        stack.addArrangedSubview(passwordHolder)
         reveal.target = self
         reveal.action = #selector(togglePassword)
-        let copy = NSButton(title: "Copy", target: self, action: #selector(copyPassword))
+        let copy = NSButton(title: "Copy password", target: self, action: #selector(copyPassword))
         copy.bezelStyle = .rounded
-        stack.addArrangedSubview(row([reveal, copy]))
+        copy.image = NSImage(systemSymbolName: "doc.on.doc", accessibilityDescription: nil)
+        copy.imagePosition = .imageLeading
+        copy.toolTip = "Clears from the clipboard after 30 seconds or when Zipkesh closes."
+        let passwordActions = row([reveal, NSView(), copy])
         style.addItems(withTitles: ["Strong · 24 characters", "Easy to type · 4 groups", "Long · 48 characters"])
+        style.setAccessibilityLabel("Generated password style")
+        style.toolTip = "Choose a style, then click Generate."
         let generate = NSButton(title: "Generate", target: self, action: #selector(generatePassword))
         generate.bezelStyle = .rounded
-        stack.addArrangedSubview(row([style, generate]))
-        let hint = label("Save your password somewhere safe. It cannot be recovered.\nCopied passwords clear after 30 seconds while Zipkesh is open.", size: 12)
-        hint.textColor = .secondaryLabelColor
-        stack.addArrangedSubview(hint)
+        generate.image = NSImage(systemSymbolName: "arrow.clockwise", accessibilityDescription: nil)
+        generate.imagePosition = .imageLeading
+        generate.keyEquivalent = "r"
+        generate.keyEquivalentModifierMask = .command
+        let generation = row([style, generate])
+        style.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        generate.setContentHuggingPriority(.required, for: .horizontal)
+        passwordFeedback.font = .systemFont(ofSize: 12)
+        passwordFeedback.textColor = supportingText
+        passwordFeedback.maximumNumberOfLines = 2
+        passwordFeedback.heightAnchor.constraint(greaterThanOrEqualToConstant: 18).isActive = true
+        let hint = label("Keep your password safe. It cannot be recovered.", size: 12)
+        hint.textColor = supportingText
+        let passwordPanel = surface(column([
+            label("Password", bold: true), passwordHolder, passwordActions,
+            generation, passwordFeedback, hint
+        ], spacing: 10))
 
         progress.style = .spinning
         progress.controlSize = .small
         progress.isDisplayedWhenStopped = false
+        progress.widthAnchor.constraint(equalToConstant: 16).isActive = true
+        progress.heightAnchor.constraint(equalToConstant: 16).isActive = true
         status.font = .systemFont(ofSize: 12)
-        status.textColor = .secondaryLabelColor
+        status.textColor = supportingText
         status.maximumNumberOfLines = 2
-        let statusRow = row([progress, status])
         status.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        stack.addArrangedSubview(statusRow)
+        let statusRow = row([progress, status])
+        statusRow.heightAnchor.constraint(greaterThanOrEqualToConstant: 32).isActive = true
         create.target = self
         create.action = #selector(saveArchive)
         create.bezelStyle = .rounded
+        create.controlSize = .large
+        create.bezelColor = .controlAccentColor
+        window.defaultButtonCell = create.cell as? NSButtonCell
         create.keyEquivalent = "\r"
+        create.toolTip = "Choose where to save your encrypted archive."
         cancel.target = self
         cancel.action = #selector(cancelAction)
         cancel.bezelStyle = .rounded
+        cancel.controlSize = .large
         cancel.keyEquivalent = "\u{1b}"
-        let spacer = NSView()
-        let buttons = row([spacer, cancel, create])
-        stack.addArrangedSubview(buttons)
-        for view in [selection, format, note, passwordHolder, hint, statusRow, buttons] as [NSView] {
-            view.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
-        }
+        let buttons = row([NSView(), cancel, create])
+        let stack = column([header, selectionPanel, archivePanel, passwordPanel, statusRow, buttons], spacing: 16)
+        stack.setCustomSpacing(22, after: header)
+        stack.setCustomSpacing(6, after: statusRow)
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        backdrop.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: backdrop.leadingAnchor, constant: 28),
+            stack.trailingAnchor.constraint(equalTo: backdrop.trailingAnchor, constant: -28),
+            stack.topAnchor.constraint(equalTo: backdrop.topAnchor, constant: 18),
+            stack.bottomAnchor.constraint(lessThanOrEqualTo: backdrop.bottomAnchor, constant: -24)
+        ])
         controls = [format, password, visiblePassword, reveal, copy, style, generate, create]
+        window.initialFirstResponder = format
+        window.recalculateKeyViewLoop()
         formatChanged()
         generatePassword()
+        backdrop.layoutSubtreeIfNeeded()
+        window.setContentSize(NSSize(width: 580, height: stack.fittingSize.height + 42))
         window.center()
+    }
+
+    @objc private func accessibilityChanged() {
+        let opaque = NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
+        backdrop.material = opaque ? .windowBackground : .underWindowBackground
+        backdrop.blendingMode = opaque ? .withinWindow : .behindWindow
+        backdrop.needsDisplay = true
+        func redraw(_ view: NSView) {
+            view.needsDisplay = true
+            view.subviews.forEach(redraw)
+        }
+        redraw(backdrop)
+    }
+
+    func controlTextDidChange(_ notification: Notification) {
+        updatePasswordFeedback()
+        status.stringValue = "Keep a safe copy of your password before creating the archive."
+    }
+
+    private var passwordProblem: String? {
+        let secret = currentPassword
+        if secret.count < 8 { return "Use at least 8 characters." }
+        if secret.utf8.count > 256 { return "Use at most 256 UTF-8 bytes." }
+        if secret.unicodeScalars.contains(where: { $0.value < 32 || $0.value == 127 }) {
+            return "Remove tabs, line breaks, and control characters."
+        }
+        if format.indexOfSelectedItem != 1 && !secret.unicodeScalars.allSatisfy({ $0.value < 128 }) {
+            return "Choose 7z to use a password with Unicode characters."
+        }
+        return nil
+    }
+
+    private func updatePasswordFeedback() {
+        passwordFeedback.stringValue = passwordProblem ?? "\(currentPassword.count) characters · Ready to encrypt"
+        passwordFeedback.textColor = passwordProblem == nil ? supportingText : .labelColor
+    }
+
+    func smokeTest() {
+        for appearance in [NSAppearance.Name.aqua, .darkAqua] {
+            window.appearance = NSAppearance(named: appearance)
+            backdrop.layoutSubtreeIfNeeded()
+            func checkLayout(_ view: NSView) {
+                guard !view.isHidden else { return }
+                precondition(!view.hasAmbiguousLayout, "Ambiguous layout: \(view)")
+                if let control = view as? NSControl {
+                    let rect = control.convert(control.bounds, to: backdrop)
+                    precondition(backdrop.bounds.insetBy(dx: -1, dy: -1).contains(rect), "Control outside window")
+                }
+                view.subviews.forEach(checkLayout)
+            }
+            checkLayout(backdrop)
+        }
+        password.stringValue = "short"
+        precondition(passwordProblem != nil)
+        password.stringValue = "A-valid-password"
+        precondition(passwordProblem == nil)
+        reveal.state = .on
+        togglePassword()
+        precondition(visiblePassword.stringValue == password.stringValue)
+        visiblePassword.stringValue = "رمز-طولانی-امن"
+        precondition(passwordProblem != nil)
+        format.selectItem(at: 1)
+        formatChanged()
+        precondition(passwordProblem == nil)
+        reveal.state = .off
+        togglePassword()
+        precondition(password.stringValue == visiblePassword.stringValue)
+        format.selectItem(at: 2)
+        formatChanged()
+        precondition(note.stringValue.contains("Weak legacy"))
+        precondition(format.nextValidKeyView != nil)
+        window.appearance = nil
     }
 
     func show() {
@@ -174,6 +345,8 @@ final class Zipkesh: NSObject, NSWindowDelegate {
             "Weak legacy encryption. For compatibility only; avoid it for sensitive files. Filenames stay visible."
         ]
         note.stringValue = notes[format.indexOfSelectedItem]
+        note.textColor = format.indexOfSelectedItem == 2 ? .labelColor : supportingText
+        updatePasswordFeedback()
     }
 
     @objc private func togglePassword() {
@@ -184,6 +357,7 @@ final class Zipkesh: NSObject, NSWindowDelegate {
         }
         password.isHidden = reveal.state == .on
         visiblePassword.isHidden = reveal.state != .on
+        window.makeFirstResponder(reveal.state == .on ? visiblePassword : password)
     }
 
     @objc private func generatePassword() {
@@ -203,7 +377,8 @@ final class Zipkesh: NSObject, NSWindowDelegate {
             let valueWithoutNewline = value.trimmingCharacters(in: .newlines)
             password.stringValue = valueWithoutNewline
             visiblePassword.stringValue = valueWithoutNewline
-            status.stringValue = "Password generated locally."
+            updatePasswordFeedback()
+            status.stringValue = "Password generated on this Mac."
         } catch {
             status.stringValue = "Password generator unavailable. Re-run the installer or enter your own."
         }
@@ -233,16 +408,12 @@ final class Zipkesh: NSObject, NSWindowDelegate {
 
     @objc private func saveArchive() {
         let secret = currentPassword
-        guard secret.count >= 8, secret.utf8.count <= 256,
-              !secret.unicodeScalars.contains(where: { $0.value < 32 || $0.value == 127 }) else {
-            status.stringValue = "Use 8+ characters, at most 256 UTF-8 bytes, and no control characters."
+        if let problem = passwordProblem {
+            status.stringValue = problem
+            window.makeFirstResponder(reveal.state == .on ? visiblePassword : password)
             return
         }
         let mode = ["zip-aes", "7z", "zip-legacy"][format.indexOfSelectedItem]
-        guard mode == "7z" || secret.unicodeScalars.allSatisfy({ $0.value < 128 }) else {
-            status.stringValue = "ZIP needs English letters/symbols. Choose 7z for a Unicode password."
-            return
-        }
         let suffix = mode == "7z" ? "7z" : "zip"
         let first = URL(fileURLWithPath: paths[0])
         let base = paths.count == 1 ? first.deletingPathExtension().lastPathComponent : "Archive"
@@ -251,7 +422,7 @@ final class Zipkesh: NSObject, NSWindowDelegate {
         panel.prompt = "Create archive"
         panel.nameFieldStringValue = "\(base).\(suffix)"
         panel.directoryURL = first.deletingLastPathComponent()
-        panel.allowedFileTypes = [suffix]
+        panel.allowedContentTypes = [UTType(filenameExtension: suffix) ?? .archive]
         panel.allowsOtherFileTypes = false
         panel.canCreateDirectories = true
         panel.isExtensionHidden = false
@@ -276,6 +447,8 @@ final class Zipkesh: NSObject, NSWindowDelegate {
             try task.run()
             worker = task
             running = true
+            create.title = "Creating archive…"
+            cancel.title = "Cancel archive"
             controls.forEach { $0.isEnabled = false }
             progress.startAnimation(nil)
             status.stringValue = "Encrypting and verifying… Keep the selected files unchanged."
@@ -296,6 +469,8 @@ final class Zipkesh: NSObject, NSWindowDelegate {
 
     private func finished(data: Data, code: Int32) {
         running = false
+        create.title = "Create archive…"
+        cancel.title = "Cancel"
         worker = nil
         controls.forEach { $0.isEnabled = true }
         cancel.isEnabled = true
@@ -343,7 +518,8 @@ let args = Array(CommandLine.arguments.dropFirst())
 if args == ["--smoke-test"] {
     // Constructs the real view hierarchy on macOS CI without starting a modal loop.
     let controller = Zipkesh(python: "/usr/bin/false", backend: "", sevenzip: "", paths: ["/tmp/example.txt"])
-    withExtendedLifetime(controller) { print("Zipkesh AppKit window constructed.") }
+    controller.smokeTest()
+    withExtendedLifetime(controller) { print("Zipkesh light/dark layout, password validation, and reveal checks passed.") }
     exit(0)
 }
 guard args.count >= 8, args[0] == "--python", args[2] == "--backend", args[4] == "--sevenzip", args[6] == "--" else {

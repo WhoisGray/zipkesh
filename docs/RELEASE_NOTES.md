@@ -1,17 +1,12 @@
-Zipkesh 1.0.1
+Zipkesh 1.1.0
 
-- Fix Python symlink conflicts on the Intel macOS CI runner.
-- Download the latest published release for remote installs.
-- Read installer and Finder service versions from VERSION.
-
-Finder → right-click → encrypted archive.
-
-Zipkesh 1.0.0 adds a native macOS Quick Action for files and folders, ZIP AES-256,
-7z with encrypted filenames, optional legacy ZIP, and three local password styles.
-Includes English/Persian documentation and a one-command source installer.
+- Redesign the Finder window with a frosted macOS background, grouped settings, and light/dark appearances.
+- Add larger password controls, live validation, and clearer archive progress feedback.
+- Improve keyboard focus, accessible control labels, and reduced-transparency support.
+- Extend the AppKit smoke check to cover both appearances, layout bounds, password validation, and show/hide synchronization.
 
 Requires macOS 13+, Homebrew, Apple Command Line Tools, 7zip and Python 3.13.
-The installer checks dependencies and builds the UI locally. No standalone app.
+The installer downloads the latest published release and builds the UI locally.
 
 See README.md for installation and docs/TESTING.md for validation boundaries.
 Finder Archive Utility cannot open AES ZIP or 7z; use Keka or 7-Zip.
