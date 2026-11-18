@@ -3,7 +3,6 @@
 set -euo pipefail
 umask 077
 
-VERSION=1.0.0
 REPOSITORY=whoisGray/zipkesh
 PREFIX="${HOME}/Library/Application Support/Zipkesh"
 SERVICES="${HOME}/Library/Services"
@@ -23,17 +22,29 @@ MAJOR=$(/usr/bin/sw_vers -productVersion | cut -d. -f1)
 [ "$MAJOR" -ge 13 ] || die 'macOS 13 or newer is required.'
 
 SOURCE=""
+TAG=""
 if [ -n "${BASH_SOURCE[0]:-}" ]; then
     SOURCE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 fi
 if [ ! -f "$SOURCE/Sources/Zipkesh.swift" ] || [ ! -f "$SOURCE/zipkesh/engine.py" ]; then
     TEMP_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/zipkesh-download.XXXXXX")
-    printf 'Downloading Zipkesh v%s…\n' "$VERSION"
+    RELEASE_URL=$(/usr/bin/curl --fail --location --retry 3 --proto '=https' --tlsv1.2 \
+        --silent --show-error --output /dev/null --write-out '%{url_effective}' \
+        "https://github.com/${REPOSITORY}/releases/latest") || die 'Could not resolve the latest published release.'
+    TAG=${RELEASE_URL##*/}
+    [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || die 'Latest release has an unsupported version tag.'
+    printf 'Downloading Zipkesh %s…\n' "$TAG"
     /usr/bin/curl --fail --location --retry 3 --proto '=https' --tlsv1.2 \
-        "https://codeload.github.com/${REPOSITORY}/tar.gz/refs/tags/v${VERSION}" -o "$TEMP_ROOT/source.tar.gz"
-    /usr/bin/tar -xzf "$TEMP_ROOT/source.tar.gz" -C "$TEMP_ROOT"
-    SOURCE="$TEMP_ROOT/zipkesh-${VERSION}"
+        "https://codeload.github.com/${REPOSITORY}/tar.gz/refs/tags/${TAG}" -o "$TEMP_ROOT/source.tar.gz"
+    SOURCE="$TEMP_ROOT/source"
+    mkdir -p "$SOURCE"
+    /usr/bin/tar -xzf "$TEMP_ROOT/source.tar.gz" --strip-components=1 -C "$SOURCE"
     [ -f "$SOURCE/Sources/Zipkesh.swift" ] || die 'Source archive is incomplete.'
+fi
+VERSION=$(cat "$SOURCE/VERSION") || die 'Source version is missing.'
+[[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || die 'Source version is invalid.'
+if [ -n "${TAG:-}" ] && [ "$TAG" != "v$VERSION" ]; then
+    die 'Release tag does not match the source version.'
 fi
 
 # Homebrew's installer handles Command Line Tools and may request your login

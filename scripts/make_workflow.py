@@ -12,7 +12,7 @@ def build_workflow(bundle: Path, launcher: Path) -> None:
     info = {
         "CFBundleIdentifier": "io.github.whoisgray.zipkesh.service",
         "CFBundleName": "Zipkesh — Encrypt Archive",
-        "CFBundleShortVersionString": "1.0.0",
+        "CFBundleShortVersionString": (Path(__file__).resolve().parents[1] / "VERSION").read_text().strip(),
         "NSServices": [{
             "NSMenuItem": {"default": "Zipkesh — Encrypt Archive"},
             "NSMessage": "runWorkflowAsService",

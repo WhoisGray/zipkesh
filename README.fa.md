@@ -18,10 +18,10 @@
 
 ## نصب با یک دستور
 
-پس از انتشار [نسخهٔ v1.0.0](https://github.com/whoisGray/zipkesh/releases/tag/v1.0.0):
+نصب [آخرین نسخه](https://github.com/whoisGray/zipkesh/releases/latest):
 
 ```sh
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/whoisGray/zipkesh/v1.0.0/install.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/whoisGray/zipkesh/main/install.sh)"
 ```
 
 برای نصب از سورس دانلودشده یا کلون‌شده، داخل پوشهٔ پروژه اجرا کن:

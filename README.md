@@ -20,10 +20,10 @@ The image above is an interface illustration, not a captured macOS screenshot.
 
 ## Install
 
-After [v1.0.0](https://github.com/whoisGray/zipkesh/releases/tag/v1.0.0) has been published:
+Install the [latest release](https://github.com/whoisGray/zipkesh/releases/latest):
 
 ```sh
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/whoisGray/zipkesh/v1.0.0/install.sh)"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/whoisGray/zipkesh/main/install.sh)"
 ```
 
 Or inspect a downloaded/cloned copy and install locally:

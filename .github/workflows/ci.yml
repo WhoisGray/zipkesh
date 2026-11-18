@@ -28,7 +28,8 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y 7zip shellcheck
       - name: Install dependencies (macOS)
         if: runner.os == 'macOS'
-        run: brew install 7zip python@3.13
+        # The Intel runner includes python.org symlinks in Homebrew's prefix.
+        run: brew install --overwrite 7zip python@3.13
       - name: Check shell syntax
         run: bash -n install.sh uninstall.sh scripts/check-macos.sh
       - name: Check shell behavior

@@ -1,3 +1,9 @@
+Zipkesh 1.0.1
+
+- Fix Python symlink conflicts on the Intel macOS CI runner.
+- Download the latest published release for remote installs.
+- Read installer and Finder service versions from VERSION.
+
 Finder → right-click → encrypted archive.
 
 Zipkesh 1.0.0 adds a native macOS Quick Action for files and folders, ZIP AES-256,
