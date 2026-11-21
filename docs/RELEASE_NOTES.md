@@ -1,9 +1,7 @@
-Zipkesh 1.1.0
+Zipkesh 1.1.1
 
-- Redesign the Finder window with a frosted macOS background, grouped settings, and light/dark appearances.
-- Add larger password controls, live validation, and clearer archive progress feedback.
-- Improve keyboard focus, accessible control labels, and reduced-transparency support.
-- Extend the AppKit smoke check to cover both appearances, layout bounds, password validation, and show/hide synchronization.
+- Show a live random-guess crack-time estimate in the password panel, with its assumptions and limitations.
+- Keep the estimate readable in light and dark appearances and explain why predictable passwords may be cracked faster.
 
 Requires macOS 13+, Homebrew, Apple Command Line Tools, 7zip and Python 3.13.
 The installer downloads the latest published release and builds the UI locally.

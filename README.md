@@ -67,6 +67,10 @@ other Unicode password. Persian filenames work in all three modes.
 - **Three password styles:** Strong (24 characters), Easy to type (four groups of
   four random letters/digits), and Long (48 characters). All use cryptographic randomness.
 - **Your own password:** 8+ characters, at most 256 UTF-8 bytes, no control characters.
+- **Crack-time estimate:** The password panel shows a random-guess estimate at
+  one billion guesses per second. It assumes random characters; words and
+  predictable patterns can be cracked much faster. Unicode passwords do not
+  receive an estimate.
 - **Native window:** system light/dark appearance, Show/Copy, a save sheet and Cancel.
 - **No silent overwrite:** choose a new filename; a completed archive never replaces an existing file.
 - **Verification before delivery:** failed or cancelled jobs remove unfinished output.

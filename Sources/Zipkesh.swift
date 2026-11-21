@@ -36,6 +36,7 @@ final class Zipkesh: NSObject, NSWindowDelegate, NSTextFieldDelegate {
                                   styleMask: [.titled, .closable], backing: .buffered, defer: false)
     private let backdrop = NSVisualEffectView()
     private let passwordFeedback = NSTextField(wrappingLabelWithString: "")
+    private let crackEstimate = NSTextField(wrappingLabelWithString: "")
     private let format = NSPopUpButton()
     private let style = NSPopUpButton()
     private let password = NSSecureTextField()
@@ -206,9 +207,17 @@ final class Zipkesh: NSObject, NSWindowDelegate, NSTextFieldDelegate {
         passwordFeedback.heightAnchor.constraint(greaterThanOrEqualToConstant: 18).isActive = true
         let hint = label("Keep your password safe. It cannot be recovered.", size: 12)
         hint.textColor = supportingText
+        let estimateTitle = label("Random-guess estimate", size: 12, bold: true)
+        crackEstimate.font = .systemFont(ofSize: 15, weight: .semibold)
+        crackEstimate.textColor = .labelColor
+        crackEstimate.maximumNumberOfLines = 2
+        let estimateDetail = label("At 1 billion guesses per second, assuming random characters. Words and patterns can be cracked much faster.", size: 12)
+        estimateDetail.textColor = supportingText
+        let estimateBody = column([estimateTitle, crackEstimate, estimateDetail], spacing: 5)
+        let estimateBox = surface(estimateBody, inset: 14)
         let passwordPanel = surface(column([
             label("Password", bold: true), passwordHolder, passwordActions,
-            generation, passwordFeedback, hint
+            generation, passwordFeedback, estimateBox, hint
         ], spacing: 10))
 
         progress.style = .spinning
@@ -290,6 +299,30 @@ final class Zipkesh: NSObject, NSWindowDelegate, NSTextFieldDelegate {
     private func updatePasswordFeedback() {
         passwordFeedback.stringValue = passwordProblem ?? "\(currentPassword.count) characters · Ready to encrypt"
         passwordFeedback.textColor = passwordProblem == nil ? supportingText : .labelColor
+        crackEstimate.stringValue = passwordCrackEstimate(currentPassword)
+    }
+
+    private func passwordCrackEstimate(_ secret: String) -> String {
+        guard !secret.isEmpty else { return "Enter a password to see an estimate." }
+        guard secret.unicodeScalars.allSatisfy({ $0.value >= 32 && $0.value < 127 }) else {
+            return "Crack time cannot be estimated for this password. Use a long, randomly generated password."
+        }
+        let scalars = secret.unicodeScalars
+        var pool = 0
+        if scalars.contains(where: { (97...122).contains($0.value) }) { pool += 26 }
+        if scalars.contains(where: { (65...90).contains($0.value) }) { pool += 26 }
+        if scalars.contains(where: { (48...57).contains($0.value) }) { pool += 10 }
+        if scalars.contains(where: { !(48...57).contains($0.value) && !(65...90).contains($0.value) && !(97...122).contains($0.value) }) { pool += 33 }
+        let logSeconds = Double(secret.count) * log10(Double(pool)) - log10(2.0) - 9
+        let duration: String
+        if logSeconds < 0 { duration = "less than a second" }
+        else if logSeconds < log10(60.0) { duration = "about \(Int(pow(10, logSeconds))) seconds" }
+        else if logSeconds < log10(3600.0) { duration = "about \(Int(pow(10, logSeconds) / 60)) minutes" }
+        else if logSeconds < log10(86400.0) { duration = "about \(Int(pow(10, logSeconds) / 3600)) hours" }
+        else if logSeconds < log10(31557600.0) { duration = "about \(Int(pow(10, logSeconds) / 86400)) days" }
+        else if logSeconds < log10(31557600.0 * 1_000_000_000) { duration = "about \(Int(pow(10, logSeconds) / 31557600)) years" }
+        else { duration = "over a billion years" }
+        return duration.prefix(1).uppercased() + duration.dropFirst()
     }
 
     func smokeTest() {
@@ -309,6 +342,9 @@ final class Zipkesh: NSObject, NSWindowDelegate, NSTextFieldDelegate {
         }
         password.stringValue = "short"
         precondition(passwordProblem != nil)
+        precondition(passwordCrackEstimate("").contains("Enter a password"))
+        precondition(passwordCrackEstimate("12345678").contains("Less than a second"))
+        precondition(passwordCrackEstimate("رمز").contains("cannot be estimated"))
         password.stringValue = "A-valid-password"
         precondition(passwordProblem == nil)
         reveal.state = .on
